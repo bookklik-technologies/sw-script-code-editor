@@ -1,11 +1,8 @@
 import { cmdId } from './consts';
-import { MonacoLoader } from './monaco-loader';
-
-declare global {
-  interface Window {
-    monaco: any;
-  }
-}
+import { EditorView, basicSetup } from 'codemirror';
+import { EditorState } from '@codemirror/state';
+import { javascript } from '@codemirror/lang-javascript';
+import { vscodeDark } from '@uiw/codemirror-theme-vscode';
 
 export interface PluginOptions {
   starter?: string;
@@ -16,8 +13,7 @@ export interface PluginOptions {
   onError?: (error: Error) => void;
   modalTitle?: string;
   codeLabel?: string;
-  monacoOptions?: Record<string, any>;
-  monacoLoaderOptions?: Record<string, any>;
+  codeMirrorOptions?: Record<string, any>;
   buttonLabel?: string;
   commandAttachScript?: Record<string, any>;
 }
@@ -28,8 +24,7 @@ export default (editor: any, opts: PluginOptions = {}) => {
   const domc = editor.Components;
   const {
     modalTitle = 'Script',
-    monacoOptions = {},
-    monacoLoaderOptions = {},
+    codeMirrorOptions = {},
     commandAttachScript = {},
     toolbarIcon = '<i class="fa fa-file-code-o"></i>',
     onRun = () => console.log('valid syntax'),
@@ -40,7 +35,6 @@ export default (editor: any, opts: PluginOptions = {}) => {
 
   let scriptTypesSupport = opts.scriptTypesSupport;
   let content: HTMLElement | null = null;
-  let monacoLoader: MonacoLoader;
 
   const appendToContent = (target: HTMLElement, content: any) => {
     if (content instanceof HTMLElement) {
@@ -49,9 +43,6 @@ export default (editor: any, opts: PluginOptions = {}) => {
       target.insertAdjacentHTML('beforeend', content);
     }
   };
-
-  // Initialize Monaco Loader
-  monacoLoader = MonacoLoader.getInstance();
 
   if (editor.$.isString(scriptTypesSupport)) {
     scriptTypesSupport = (scriptTypesSupport as string).split(',');
@@ -91,7 +82,6 @@ export default (editor: any, opts: PluginOptions = {}) => {
     options: {} as any,
     target: null as any,
     codeViewer: null as any,
-    monacoEditor: null as any,
 
     run(editor: any, sender: any, opts: any = {}) {
       this.editor = editor;
@@ -103,13 +93,11 @@ export default (editor: any, opts: PluginOptions = {}) => {
     },
 
     stop(editor: any) {
-      // Clean up Monaco Editor instance
+      // Clean up CodeMirror instance
       if (this.codeViewer && this.codeViewer.dispose) {
         this.codeViewer.dispose();
         this.codeViewer = null;
-        this.monacoEditor = null;
       }
-      // Clear content cache to force recreation on next open
       content = null;
       md.close();
     },
@@ -121,50 +109,26 @@ export default (editor: any, opts: PluginOptions = {}) => {
       const { editor, options } = this;
       const title = options.title || modalTitle;
       
-      try {
-        // Load Monaco Editor first
-        await monacoLoader.load(monacoLoaderOptions);
-        
-        // Make sure Monaco is available
-        if (!monacoLoader.isMonacoLoaded()) {
-          throw new Error('Monaco Editor failed to load properly');
+      content = this.getContent();
+      let code = target.getScriptString() || starter;
+      
+      // Open modal first
+      const modal = md.open({
+        title,
+        content
+      });
+      
+      // Set up close handler
+      modal.getModel().once('change:open', () => editor.stopCommand(this.id));
+      
+      // Initialize CodeMirror after modal is open
+      setTimeout(() => {
+        const codeViewer = this.getCodeViewer();
+        if (codeViewer) {
+          codeViewer.setContent(code);
+          codeViewer.focus();
         }
-        
-        // Always create fresh content to avoid DOM attachment issues
-        content = this.getContent();
-        let code = target.getScriptString() || starter;
-        
-        // Open modal first
-        const modal = md.open({
-          title,
-          content
-        });
-        
-        // Set up close handler
-        modal.getModel().once('change:open', () => editor.stopCommand(this.id));
-        
-        // Wait for modal to be fully rendered, then initialize Monaco
-        setTimeout(() => {
-          try {
-            const codeViewer = this.getCodeViewer();
-            if (codeViewer) {
-              codeViewer.setContent(code);
-              // Give Monaco a bit more time to render
-              setTimeout(() => {
-                codeViewer.refresh();
-                codeViewer.focus();
-              }, 100);
-            }
-          } catch (error) {
-            console.error('Error initializing Monaco editor:', error);
-          }
-        }, 300);
-        
-      } catch (error) {
-        console.error('Failed to load Monaco Editor:', error);
-        editor.trigger('monaco:load-error', error);
-        // Could fall back to a simple textarea here
-      }
+      }, 0);
     },
 
     /**
@@ -184,25 +148,27 @@ export default (editor: any, opts: PluginOptions = {}) => {
       const { editor } = this;
       const content = document.createElement('div');
       const pfx = editor.getConfig('stylePrefix');
-      content.className = `${pfx}attach-script monaco-script-editor`;
+      content.className = `${pfx}attach-script sw-script-editor`;
       
-      // Add Monaco Editor styles
-      if (!document.getElementById('monaco-script-editor-styles')) {
+      // Add Editor styles
+      if (!document.getElementById('sw-script-editor-styles')) {
         const style = document.createElement('style');
-        style.id = 'monaco-script-editor-styles';
+        style.id = 'sw-script-editor-styles';
         style.textContent = `
-          .monaco-script-editor {
+          .sw-script-editor {
             display: flex;
             flex-direction: column;
             height: 500px;
           }
-          .monaco-editor-container {
+          .cm-editor-container {
             flex: 1;
             min-height: 400px;
+            border: 1px solid rgba(0,0,0,0.2);
+            border-radius: 3px;
             overflow: hidden;
           }
-          .monaco-editor .margin {
-            background-color: #1e1e1e !important;
+          .cm-editor {
+            height: 100%;
           }
         `;
         document.head.appendChild(style);
@@ -257,107 +223,37 @@ export default (editor: any, opts: PluginOptions = {}) => {
     },
 
     /**
-     * Return the Monaco Editor instance
+     * Return the CodeMirror instance
      */
     getCodeViewer() {
-      const { editor } = this;
-
       if (!this.codeViewer) {
-        try {
-          const monaco = monacoLoader.getMonaco();
-          if (!monaco) {
-            throw new Error('Monaco Editor not loaded');
-          }
+        const container = document.createElement('div');
+        container.className = 'cm-editor-container';
+        
+        // Initialize CodeMirror 6
+        const view = new EditorView({
+          state: undefined, // Will be set in setContent
+          parent: container,
+        });
 
-          // Create Monaco Editor container
-          const container = document.createElement('div');
-          container.style.height = '400px';
-          container.style.width = '100%';
-          container.className = 'monaco-editor-container';
-          
-          // Monaco Editor configuration
-          const monacoConfig = {
-            value: '',
-            language: 'javascript',
-            theme: 'vs-dark',
-            automaticLayout: true,
-            minimap: { enabled: false },
-            scrollBeyondLastLine: false,
-            wordWrap: 'on',
-            fontSize: 14,
-            lineNumbers: 'on',
-            folding: true,
-            tabSize: 2,
-            insertSpaces: true,
-            detectIndentation: false,
-            renderWhitespace: 'selection',
-            selectOnLineNumbers: true,
-            roundedSelection: false,
-            readOnly: false,
-            cursorStyle: 'line',
-            cursorBlinking: 'blink',
-            contextmenu: true,
-            mouseWheelZoom: false,
-            ...monacoOptions,
-          };
-          
-          // Initialize Monaco Editor
-          this.monacoEditor = monaco.editor.create(container, monacoConfig);
-
-          // Add JavaScript completion and validation
-          monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
-            noSemanticValidation: false,
-            noSyntaxValidation: false,
-          });
-
-          // Create wrapper object to match expected interface
-          this.codeViewer = {
-            getElement: () => container,
-            setContent: (code: string) => {
-              if (this.monacoEditor) {
-                this.monacoEditor.setValue(code || '');
-              }
-            },
-            getContent: () => {
-              return this.monacoEditor ? this.monacoEditor.getValue() : '';
-            },
-            refresh: () => {
-              if (this.monacoEditor) {
-                setTimeout(() => this.monacoEditor.layout(), 0);
-              }
-            },
-            focus: () => {
-              if (this.monacoEditor) {
-                this.monacoEditor.focus();
-              }
-            },
-            dispose: () => {
-              if (this.monacoEditor) {
-                this.monacoEditor.dispose();
-                this.monacoEditor = null;
-              }
-            }
-          };
-        } catch (error) {
-          console.error('Failed to initialize Monaco Editor:', error);
-          // Fallback to a simple textarea
-          const container = document.createElement('div');
-          const textarea = document.createElement('textarea');
-          textarea.style.width = '100%';
-          textarea.style.height = '400px';
-          textarea.style.fontFamily = 'monospace';
-          textarea.style.fontSize = '14px';
-          container.appendChild(textarea);
-          
-          this.codeViewer = {
-            getElement: () => container,
-            setContent: (code: string) => textarea.value = code || '',
-            getContent: () => textarea.value,
-            refresh: () => {},
-            focus: () => textarea.focus(),
-            dispose: () => {}
-          };
-        }
+        this.codeViewer = {
+          getElement: () => container,
+          setContent: (code: string) => {
+            const state = EditorState.create({
+              doc: code || '',
+              extensions: [
+                basicSetup,
+                javascript(),
+                vscodeDark,
+                ...((codeMirrorOptions as any).extensions || [])
+              ],
+            });
+            view.setState(state);
+          },
+          getContent: () => view.state.doc.toString(),
+          focus: () => view.focus(),
+          dispose: () => view.destroy()
+        };
       }
 
       return this.codeViewer;
@@ -369,35 +265,14 @@ export default (editor: any, opts: PluginOptions = {}) => {
     runCode() {
       try {
         const code = this.getCodeViewer().getContent();
-        const monaco = monacoLoader.getMonaco();
         
-        // Check if code is empty or only whitespace
         if (!code || code.trim().length === 0) {
-          const error = new Error('Code is empty. Please write some JavaScript code.');
-          throw error;
-        }
-        
-        // Basic syntax validation using Monaco's built-in validation
-        if (this.monacoEditor && monaco && monaco.languages) {
-          // Get model markers (errors/warnings)
-          const model = this.monacoEditor.getModel();
-          const markers = monaco.editor.getModelMarkers({ resource: model.uri });
-          
-          if (markers.length > 0) {
-            const errors = markers.filter((m: any) => m.severity === monaco.MarkerSeverity.Error);
-            if (errors.length > 0) {
-              const error = new Error(`Syntax Error: ${errors[0].message} at line ${errors[0].startLineNumber}`);
-              alert(`Syntax Error: ${errors[0].message} at line ${errors[0].startLineNumber}`);
-              // throw error;
-            }
-          }
+          throw new Error('Code is empty. Please write some JavaScript code.');
         }
         
         // Test code execution in a safe context
-        // Wrap the code in a way that preserves its structure
         try {
-          const testFunction = new Function('"use strict";\n' + code);
-          // Don't execute, just validate syntax
+          new Function('"use strict";\n' + code);
           alert('No syntax errors detected.');
         } catch (syntaxError: any) {
           throw new Error(`Syntax Error: ${syntaxError.message}`);
@@ -407,17 +282,7 @@ export default (editor: any, opts: PluginOptions = {}) => {
       } catch (err: any) {
         console.error("Script validation error:", err);
         onError && onError(err);
-        
-        // Highlight error in Monaco Editor if possible
-        if (this.monacoEditor && err.line) {
-          this.monacoEditor.setSelection({
-            startLineNumber: err.line,
-            startColumn: 1,
-            endLineNumber: err.line,
-            endColumn: 1
-          });
-          this.monacoEditor.focus();
-        }
+        alert(err.message);
       }
     },
 

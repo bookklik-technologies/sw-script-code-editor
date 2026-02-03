@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>GrapesJS Script Editor with Monaco Editor</title>
+    <title>GrapesJS Script Editor with CodeMirror Editor</title>
     <link href="https://unpkg.com/grapesjs/dist/css/grapes.min.css" rel="stylesheet">
     <script src="https://unpkg.com/grapesjs"></script>
     <style>
@@ -17,13 +17,13 @@
 
     <div id="gjs" style="height:0px; overflow:hidden">
       <div style="margin:100px 100px 25px; padding:25px; font:caption">
-        <h2>GrapesJS Script Editor with Monaco Editor</h2>
-        <p>This plugin now automatically loads Monaco Editor without requiring separate initialization.</p>
+        <h2>GrapesJS Script Editor with CodeMirror</h2>
+        <p>This plugin uses CodeMirror 6 to provide a powerful code editing experience within GrapesJS.</p>
         <ul>
-          <li>No need to manually load Monaco Editor scripts</li>
-          <li>Fully integrated Monaco Editor initialization</li>
-          <li>Automatic language detection and syntax highlighting</li>
-          <li>Configurable Monaco Editor options</li>
+          <li>Integrated CodeMirror 6 initialization</li>
+          <li>VS Code Dark theme support</li>
+          <li>JavaScript syntax highlighting</li>
+          <li>Configurable CodeMirror options</li>
           <li>JavaScript validation with syntax error highlighting</li>
         </ul>
         <p>Select any component and use the script icon in the toolbar to add JavaScript code!</p>
@@ -32,7 +32,7 @@
 
     <script type="text/javascript">
       window.onload = () => {
-        // GrapesJS initialization - Monaco Editor loads automatically!
+        // GrapesJS initialization
         window.editor = grapesjs.init({
           height: '100%',
           showOffsets: true,
@@ -42,26 +42,13 @@
           container: '#gjs',
           fromElement: true,
 
-          plugins: ['grapesjs-script-monaco-editor'],
+          plugins: ['sw-script-code-editor'],
           pluginsOpts: {
-            'grapesjs-script-monaco-editor': {
-              // Monaco Editor configuration
-              monacoOptions: {
-                theme: 'vs-dark',
-                language: 'javascript',
-                readOnly: false,
-                minimap: { enabled: false },
-                lineNumbers: 'on',
-                wordWrap: 'on',
-                fontSize: 14,
+            'sw-script-code-editor': {
+              // CodeMirror Editor configuration
+              codeMirrorOptions: {
+                lineNumbers: true,
                 tabSize: 2,
-                automaticLayout: true,
-                scrollBeyondLastLine: false,
-                folding: true
-              },
-              // Monaco Loader configuration (optional)
-              monacoLoaderOptions: {
-                version: '0.54.0'  // Specify Monaco Editor version
               },
               // Plugin UI configuration
               modalTitle: 'Script Editor',
@@ -73,12 +60,6 @@
               onError: (err) => console.error('Script validation failed:', err)
             }
           }
-        });
-
-        // Listen for Monaco loading events (optional)
-        window.editor.on('monaco:load-error', (error) => {
-          console.error('Monaco Editor failed to load:', error);
-          alert('Failed to load Monaco Editor. Please check your internet connection.');
         });
       };
     </script>

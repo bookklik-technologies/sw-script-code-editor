@@ -26,23 +26,14 @@ export interface PluginOptions {
   // Textarea label
   codeLabel?: string;
 
-  // Monaco Editor options
-  monacoOptions?: Record<string, any>;
-
-  // Monaco Loader options
-  monacoLoaderOptions?: Record<string, any>;
+  // CodeMirror Editor options
+  codeMirrorOptions?: Record<string, any>;
 
   // Label for the default save button
   buttonLabel?: string;
 
   // Object to extend the default inject logic command
   commandAttachScript?: Record<string, any>;
-}
-
-declare global {
-  interface Window {
-    monaco: any;
-  }
 }
 
 export default (editor: any, opts: PluginOptions = {}) => {
@@ -71,22 +62,10 @@ export default (editor: any, opts: PluginOptions = {}) => {
     // Textarea label
     codeLabel: 'JS',
 
-    // Monaco Editor options
-    monacoOptions: {
-      theme: 'vs-dark',
-      fontSize: 14,
-      wordWrap: 'on',
-      minimap: { enabled: false },
-      automaticLayout: true,
-      scrollBeyondLastLine: false,
-      folding: true,
-      lineNumbers: 'on',
-      language: 'javascript'
-    },
-
-    // Monaco Loader options
-    monacoLoaderOptions: {
-      version: '0.54.0'
+    // CodeMirror Editor options
+    codeMirrorOptions: {
+      lineNumbers: true,
+      tabSize: 2,
     },
 
     // Label for the default save button

@@ -1,14 +1,14 @@
 {
-  "name": "grapesjs-script-monaco-editor",
-  "version": "2.0.4",
-  "description": "GrapesJS Script Editor with Monaco Editor Integration",
+  "name": "sw-script-code-editor",
+  "version": "2.0.6",
+  "description": "GrapesJS plugin to edit or attach script to selected component developed for SenangWebs",
   "main": "dist/index.js",
   "files": [
     "dist/"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Ju99ernaut/grapesjs-script-editor.git"
+    "url": "https://github.com/bookklik-technologies/sw-script-code-editor.git"
   },
   "scripts": {
     "build": "grapesjs-cli build",
@@ -19,15 +19,22 @@
     "plugin",
     "script",
     "javascript",
-    "monaco-editor",
     "code-editor",
-    "syntax-highlighting",
-    "intellisense"
+    "syntax-highlighting"
   ],
-  "author": "Ju99ernaut",
+  "author": "Bookklik Technologies",
   "license": "MIT",
   "devDependencies": {
     "grapesjs": "^0.21.2",
     "grapesjs-cli": "^4.1.0"
+  },
+  "dependencies": {
+    "@codemirror/commands": "^6.10.1",
+    "@codemirror/lang-javascript": "^6.2.4",
+    "@codemirror/language": "^6.12.1",
+    "@codemirror/state": "^6.5.4",
+    "@codemirror/view": "^6.39.12",
+    "@uiw/codemirror-theme-vscode": "^4.25.4",
+    "codemirror": "^6.0.2"
   }
 }

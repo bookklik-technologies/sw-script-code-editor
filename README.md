@@ -1,38 +1,25 @@
-# GrapesJS Script Editor with Monaco Editor
+# GrapesJS Script Editor with CodeMirror
 
-Attach script to selected component with Monaco Editor integration
+Attach script to selected component with CodeMirror 6 integration.
 
-This plugin adds the possibility to attach JavaScript code to any component with the powerful Monaco Editor (the same editor that powers VS Code).
-
-![GrapesJS Script Editor with Monaco Editor](https://raw.githubusercontent.com/a-hakim/grapesjs-script-monaco-editor/master/preview.png)
+This plugin adds the possibility to attach JavaScript code to any component with the powerful CodeMirror 6 editor, featuring the VS Code Dark theme.
 
 ## Features
-- **Rich Syntax Highlighting** - JavaScript syntax highlighting with error detection
-- **IntelliSense** - Intelligent code completion and validation
-- **Themes** - Multiple built-in themes (VS Dark, VS Light, High Contrast)
-- **Advanced Editing** - Multi-cursor support, find and replace, code folding, and more
-- **Performance** - Optimized for large files and better rendering performance
-- **Accessibility** - Better screen reader support and keyboard navigation
+- **Rich Syntax Highlighting** - JavaScript syntax highlighting with the VS Code theme.
+- **Modern Editor** - Built on CodeMirror 6 for better performance and modularity.
+- **VS Code Theme** - Premium look and feel with `@uiw/codemirror-theme-vscode`.
+- **Advanced Editing** - Native CodeMirror 6 features including multi-cursor support and flexible configuration.
+- **Lightweight** - Bundled CodeMirror is optimized for size and performance.
 
 > Requires GrapesJS v0.14.25 or higher
 
 ## Quick Start
 
 ```javascript
-// That's it! Monaco Editor loads automatically
 grapesjs.init({
   container: '#gjs',
-  plugins: ['grapesjs-script-monaco-editor']
+  plugins: ['sw-script-code-editor']
 });
-```
-
-### HTML
-```html
-<link href="https://unpkg.com/grapesjs/dist/css/grapes.min.css" rel="stylesheet">
-<script src="https://unpkg.com/grapesjs"></script>
-<script src="dist/grapesjs-script-monaco-editor.min.js"></script>
-
-<div id="gjs"></div>
 ```
 
 ### JS
@@ -42,39 +29,24 @@ const editor = grapesjs.init({
   height: '100%',
   fromElement: true,
   storageManager: false,
-  plugins: ['grapesjs-script-monaco-editor'],
+  plugins: ['sw-script-code-editor'],
   pluginsOpts: {
-    'grapesjs-script-monaco-editor': {
-      // Monaco Editor loads automatically with these options
-      monacoOptions: {
-        theme: 'vs-dark', // 'vs', 'vs-dark', 'hc-black'
-        fontSize: 14,
-        wordWrap: 'on',
-        minimap: { enabled: false },
-        folding: true,
-        lineNumbers: 'on'
-      },
-      // Monaco Loader configuration (optional)
-      monacoLoaderOptions: {
-        version: '0.54.0'  // Specify Monaco Editor version
+    'sw-script-code-editor': {
+      // CodeMirror specific options
+      codeMirrorOptions: {
+        lineNumbers: true,
+        tabSize: 2,
+        // Add more CodeMirror extensions here
       }
     }
   }
 });
 ```
 
-### CSS
-```css
-body, html {
-  margin: 0;
-  height: 100%;
-}
-```
-
 ## Options
 
 | Option | Description | Default |
-|-|-|-
+| - | - | - |
 | `starter` | Starter code | `let el = this` |
 | `toolbarIcon` | Toolbar icon for opening script modal | `<i class="fa fa-file-code-o"></i>` | 
 | `scriptTypesSupport` | Component types to allow script editing | `['default', 'wrapper', 'text', 'textnode', 'image', 'video', 'svg']` |
@@ -82,31 +54,9 @@ body, html {
 | `onRun` | Logic to run if debug is successful | `() => console.log('valid syntax')` |
 | `onError` | Logic to run if debug finds errors | `err => console.log('error:',err)` |
 | `modalTitle` | Title for script modal | `Script` |
-| `monacoOptions` | **New:** Monaco Editor specific options (see below) | `{ theme: 'vs-dark', language: 'javascript', ... }` |
-| `monacoLoaderOptions` | **New:** Monaco Editor loading configuration | `{ version: '0.54.0' }` |
+| `codeMirrorOptions` | CodeMirror 6 specific options | `{ lineNumbers: true, tabSize: 2 }` |
 | `buttonLabel` | Label for the default save button | `Save` |
 | `commandAttachScript` | Object to extend the default `edit-script` command | `{}` |
-
-### Monaco Editor Options (`monacoOptions`)
-
-| Option | Description | Default |
-|-|-|-
-| `theme` | Editor theme: `'vs'`, `'vs-dark'`, `'hc-black'` | `'vs-dark'` |
-| `fontSize` | Font size in pixels | `14` |
-| `wordWrap` | Word wrap: `'on'`, `'off'`, `'wordWrapColumn'`, `'bounded'` | `'on'` |
-| `minimap.enabled` | Show/hide minimap | `false` |
-| `folding` | Enable code folding | `true` |
-| `lineNumbers` | Show line numbers: `'on'`, `'off'`, `'relative'`, `'interval'` | `'on'` |
-| `automaticLayout` | Automatically adjust layout | `true` |
-| `scrollBeyondLastLine` | Allow scrolling beyond last line | `false` |
-| `tabSize` | Tab size | `2` |
-
-### Monaco Loader Options (`monacoLoaderOptions`)
-
-| Option | Description | Default |
-|-|-|-
-| `version` | Monaco Editor version to load from CDN | `'0.54.0'` |
-| `baseUrl` | Custom base URL for Monaco Editor | `https://unpkg.com/monaco-editor@{version}/min/vs` |
 
 ## Development
 
